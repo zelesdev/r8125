@@ -37,15 +37,15 @@ ENABLE_DASH_SUPPORT = n
 ENABLE_DASH_PRINTER_SUPPORT = n
 CONFIG_DOWN_SPEED_100 = n
 CONFIG_ASPM = y
-ENABLE_S5WOL = y
+ENABLE_S5WOL = n
 ENABLE_S5_KEEP_CURR_MAC = n
 ENABLE_EEE = y
 ENABLE_S0_MAGIC_PACKET = n
 ENABLE_TX_NO_CLOSE = y
-ENABLE_MULTIPLE_TX_QUEUE = n
+ENABLE_MULTIPLE_TX_QUEUE = y
 ENABLE_PTP_SUPPORT = n
 ENABLE_PTP_MASTER_MODE = n
-ENABLE_RSS_SUPPORT = n
+ENABLE_RSS_SUPPORT = y
 ENABLE_LIB_SUPPORT = n
 ENABLE_USE_FIRMWARE_FILE = n
 DISABLE_WOL_SUPPORT = n
@@ -137,8 +137,10 @@ ifneq ($(KERNELRELEASE),)
 		EXTRA_CFLAGS += -DENABLE_RX_PACKET_FRAGMENT
 	endif
 else
+
+ifeq ($(KSRC),)
 	BASEDIR := /lib/modules/$(shell uname -r)
-	KERNELDIR ?= $(BASEDIR)/build
+	KSRC ?= $(BASEDIR)/build
 	PWD :=$(shell pwd)
 	DRIVERDIR := $(shell find $(BASEDIR)/kernel/drivers/net/ethernet -name realtek -type d)
 	ifeq ($(DRIVERDIR),)
@@ -168,6 +170,9 @@ else
 	if($(KREV) < $(3)) {print 0} else { print 1 } \
 	}}}}}' \
 	)
+endif
+
+.DEFAULT_GOAL := modules
 
 .PHONY: all
 all: print_vars clean modules install
@@ -190,25 +195,25 @@ print_vars:
 .PHONY:modules
 modules:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+	$(MAKE) -C $(KSRC) M=$(PWD) modules
 #else
-#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
+#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) modules
 #endif
 
 .PHONY:clean
 clean:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
+	$(MAKE) -C $(KSRC) M=$(PWD) clean
 #else
-#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) clean
+#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) clean
 #endif
 
 .PHONY:install
 install:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
+	$(MAKE) -C $(KSRC) M=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
 #else
-#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
+#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
 #endif
 
 endif
