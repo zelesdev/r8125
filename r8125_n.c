@@ -4476,8 +4476,8 @@ rtl8125_set_speed_xmii(struct net_device *dev,
         int rc = -EINVAL;
 
         //Disable Giga Lite
-        ClearEthPhyOcpBit(tp, 0xA428, BIT_9);
-        ClearEthPhyOcpBit(tp, 0xA5EA, BIT_0);
+        SetEthPhyOcpBit(tp, 0xA428, BIT_9);
+        SetEthPhyOcpBit(tp, 0xA5EA, BIT_0);
 
         if (speed != SPEED_2500 &&
             (speed != SPEED_1000) &&
