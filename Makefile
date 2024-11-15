@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 ################################################################################
 #
-# r8125 is the Linux device driver released for Realtek 2.5Gigabit Ethernet
+# r8125 is the Linux device driver released for Realtek 2.5 Gigabit Ethernet
 # controllers with PCI-Express interface.
 #
-# Copyright(c) 2022 Realtek Semiconductor Corp. All rights reserved.
+# Copyright(c) 2024 Realtek Semiconductor Corp. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the Free
@@ -31,12 +31,13 @@
 ################################################################################
 
 CONFIG_SOC_LAN = n
+ENABLE_FIBER_SUPPORT = n
 ENABLE_REALWOW_SUPPORT = n
 ENABLE_DASH_SUPPORT = n
 ENABLE_DASH_PRINTER_SUPPORT = n
 CONFIG_DOWN_SPEED_100 = n
 CONFIG_ASPM = y
-ENABLE_S5WOL = n
+ENABLE_S5WOL = y
 ENABLE_S5_KEEP_CURR_MAC = n
 ENABLE_EEE = y
 ENABLE_S0_MAGIC_PACKET = n
@@ -44,18 +45,24 @@ ENABLE_TX_NO_CLOSE = y
 ENABLE_MULTIPLE_TX_QUEUE = n
 ENABLE_PTP_SUPPORT = n
 ENABLE_PTP_MASTER_MODE = n
-ENABLE_RSS_SUPPORT = y
+ENABLE_RSS_SUPPORT = n
 ENABLE_LIB_SUPPORT = n
 ENABLE_USE_FIRMWARE_FILE = n
-DISABLE_PM_SUPPORT = y
+DISABLE_WOL_SUPPORT = n
 DISABLE_MULTI_MSIX_VECTOR = n
-ETHTOOL_LEGACY_2500baseX ?= n
+ENABLE_DOUBLE_VLAN = n
+ENABLE_PAGE_REUSE = n
+ENABLE_RX_PACKET_FRAGMENT = n
 
 ifneq ($(KERNELRELEASE),)
 	obj-m := r8125.o
 	r8125-objs := r8125_n.o rtl_eeprom.o rtltool.o
 	ifeq ($(CONFIG_SOC_LAN), y)
 		EXTRA_CFLAGS += -DCONFIG_SOC_LAN
+	endif
+	ifeq ($(ENABLE_FIBER_SUPPORT), y)
+		r8125-objs += r8125_fiber.o
+		EXTRA_CFLAGS += -DENABLE_FIBER_SUPPORT
 	endif
 	ifeq ($(ENABLE_REALWOW_SUPPORT), y)
 		r8125-objs += r8125_realwow.o
@@ -114,20 +121,24 @@ ifneq ($(KERNELRELEASE),)
 		r8125-objs += r8125_firmware.o
 		EXTRA_CFLAGS += -DENABLE_USE_FIRMWARE_FILE
 	endif
-	ifeq ($(DISABLE_PM_SUPPORT), y)
-		EXTRA_CFLAGS += -DDISABLE_PM_SUPPORT
+	ifeq ($(DISABLE_WOL_SUPPORT), y)
+		EXTRA_CFLAGS += -DDISABLE_WOL_SUPPORT
 	endif
 	ifeq ($(DISABLE_MULTI_MSIX_VECTOR), y)
 		EXTRA_CFLAGS += -DDISABLE_MULTI_MSIX_VECTOR
 	endif
-	ifeq ($(ETHTOOL_LEGACY_2500baseX), y)
-		EXTRA_CFLAGS += -DETHTOOL_LEGACY_2500baseX
+	ifeq ($(ENABLE_DOUBLE_VLAN), y)
+		EXTRA_CFLAGS += -DENABLE_DOUBLE_VLAN
+	endif
+	ifeq ($(ENABLE_PAGE_REUSE), y)
+		EXTRA_CFLAGS += -DENABLE_PAGE_REUSE
+	endif
+	ifeq ($(ENABLE_RX_PACKET_FRAGMENT), y)
+		EXTRA_CFLAGS += -DENABLE_RX_PACKET_FRAGMENT
 	endif
 else
-
-ifeq ($(KSRC),)
 	BASEDIR := /lib/modules/$(shell uname -r)
-	KSRC ?= $(BASEDIR)/build
+	KERNELDIR ?= $(BASEDIR)/build
 	PWD :=$(shell pwd)
 	DRIVERDIR := $(shell find $(BASEDIR)/kernel/drivers/net/ethernet -name realtek -type d)
 	ifeq ($(DRIVERDIR),)
@@ -157,9 +168,6 @@ ifeq ($(KSRC),)
 	if($(KREV) < $(3)) {print 0} else { print 1 } \
 	}}}}}' \
 	)
-endif
-
-.DEFAULT_GOAL := modules
 
 .PHONY: all
 all: print_vars clean modules install
@@ -182,25 +190,25 @@ print_vars:
 .PHONY:modules
 modules:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KSRC) M=$(PWD) modules
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 #else
-#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) modules
+#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
 #endif
 
 .PHONY:clean
 clean:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KSRC) M=$(PWD) clean
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
 #else
-#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) clean
+#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) clean
 #endif
 
 .PHONY:install
 install:
 #ifeq ($(call kver_ge,5,0,0),1)
-	$(MAKE) -C $(KSRC) M=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
 #else
-#	$(MAKE) -C $(KSRC) SUBDIRS=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
+#	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) INSTALL_MOD_DIR=$(RTKDIR) modules_install
 #endif
 
 endif
